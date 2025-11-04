@@ -1,0 +1,51 @@
+services:
+  app:
+    build:
+      context: ./php
+    container_name: tareaibd_app
+    volumes:
+      - ./src:/var/www/html
+    environment:
+      - APP_ENV=prod
+      - PHP_DISPLAY_ERRORS=0
+      - TZ=Europe/Madrid
+      - DB_HOST=db
+      - DB_NAME=${MYSQL_DATABASE}
+      - DB_USER=${MYSQL_USER}
+      - DB_PASS=${MYSQL_PASSWORD}
+    depends_on:
+      - db
+    ports:
+      - "8080:80"
+
+  db:
+    image: mysql:8.4
+    container_name: tareaibd_db
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL","mysqladmin ping -h localhost -u $$MYSQL_USER -p$$MYSQL_PASSWORD --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db/migrations:/docker-entrypoint-initdb.d:ro
+
+  phpmyadmin:
+    image: phpmyadmin:5-apache
+    container_name: tareaibd_pma
+    environment:
+      - PMA_HOST=db
+      - PMA_USER=${MYSQL_USER}
+      - PMA_PASSWORD=${MYSQL_PASSWORD}
+    depends_on:
+      - db
+    ports:
+      - "8081:80"
+
+volumes:
+  db_data:
